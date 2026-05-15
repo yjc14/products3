@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>食品二维码溯源系统</title>
+  <style>
+    body { 
+      margin: 0; 
+      font-family: 'Microsoft YaHei', Arial, sans-serif;
+      background: linear-gradient(135deg, #f0f9f6, #e6f3ed);
+      color: #222; 
+    }
+    .container { max-width: 760px; margin: 0 auto; padding: 15px; }
+    .header { 
+      background: linear-gradient(135deg, #0f766e, #14b8a6);
+      color: white; padding: 25px 20px; border-radius: 16px; text-align: center;
+    }
+    .card { background: white; margin-top: 20px; padding: 20px; border-radius: 16px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+    .product-img { width: 100%; height: 260px; object-fit: cover; border-radius: 12px; margin: 15px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .status { display: inline-block; padding: 8px 16px; border-radius: 30px; background: #10b981; color: white; font-weight: bold; }
+    .timeline li { padding: 12px 0; border-left: 3px solid #14b8a6; padding-left: 18px; margin: 10px 0; position: relative; }
+    .timeline li:before { content: "●"; color: #14b8a6; font-size: 18px; position: absolute; left: -9px; top: 11px; }
+    .music-control {
+      position: fixed; bottom: 25px; right: 25px; background: white; padding: 12px 18px;
+      border-radius: 50px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 100; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🌿 食品二维码溯源系统</h1>
+      <p>正品保障 · 透明可溯 · 安全可查</p>
+    </div>
+    <div id="app" class="card">正在加载溯源信息……</div>
+  </div>
+
+  <!-- 使用你自己的 MP3 文件 -->
+  <audio id="bgMusic" loop>
+    <source src="music.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- 音乐控制按钮 -->
+  <div class="music-control" onclick="toggleMusic()">
+    <span id="musicIcon">🎵</span> <span id="musicText">播放音乐</span>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const productId = params.get('id');
+    const app = document.getElementById('app');
+
+    const images = {
+      "APP202605001": "https://pic3.zhimg.com/v2-26a509ee0d9edb0b44d96d9a42ddf80e_r.jpg",
+      "MILK202605002": "https://himg2.huanqiucdn.cn/attachment2010/2019/0426/20190426100654932.jpg"
+    };
+
+    async function loadProduct() {
+      if (!productId) return app.innerHTML = '<p style="color:red">未检测到产品编号 id。</p>';
+
+      try {
+        const res = await fetch('products.json');
+        const products = await res.json();
+        const product = products.find(p => p.id === productId);
+        if (!product) return app.innerHTML = '<p style="color:red">未找到该产品信息。</p>';
+
+        const imgUrl = images[productId];
+
+        app.innerHTML = `
+          <img src="${imgUrl}" class="product-img" alt="${product.name}">
+          <h2 style="margin:12px 0 8px 0;">${product.name}</h2>
+          <p><span class="status">检测结果：${product.testResult}</span></p>
+          <h3>一、基本信息</h3>
+          <p><strong>产品编号：</strong>${product.id}</p>
+          <p><strong>生产批次：</strong>${product.batch}</p>
+          <p><strong>产地：</strong>${product.origin}</p>
+          <p><strong>生产日期：</strong>${product.date}</p>
+          <p><strong>保质期：</strong>${product.shelfLife}</p>
+          <p><strong>生产企业：</strong>${product.producer}</p>
+
+          <h3>二、检测信息</h3>
+          <p><strong>检测结果：</strong><span style="color:#10b981;font-weight:bold;">${product.testResult}</span></p>
+
+          <h3>三、物流时间轴</h3>
+          <ul class="timeline">${product.logistics.map(item => `<li>${item}</li>`).join('')}</ul>
+
+          <h3>四、溯源结论</h3>
+          <p style="background:#f0fdf4;padding:18px;border-radius:12px;line-height:1.7;">${product.conclusion}</p>
+        `;
+      } catch (e) {
+        app.innerHTML = '<p style="color:red">数据加载失败，请检查网络或文件。</p>';
+      }
+    }
+
+    let isPlaying = false;
+    const audio = document.getElementById('bgMusic');
+
+    function toggleMusic() {
+      if (isPlaying) {
+        audio.pause();
+        document.getElementById('musicIcon').textContent = '🎵';
+        document.getElementById('musicText').textContent = '播放音乐';
+      } else {
+        audio.play().catch(() => alert('音乐播放失败，请点击一下再试'));
+        document.getElementById('musicIcon').textContent = '⏸️';
+        document.getElementById('musicText').textContent = '暂停音乐';
+      }
+      isPlaying = !isPlaying;
+    }
+
+    loadProduct();
+  </script>
+</body>
+</html>
